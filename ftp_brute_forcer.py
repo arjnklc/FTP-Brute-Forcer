@@ -40,7 +40,7 @@ def ftp_login(target, username, password):
         ftp = FTP(target)
         ftp.login(username, password)
         ftp.quit()
-        print "\n[!] Credentials has found."
+        print "\n[!] Credentials have found."
         print "\n[!] Username : {}".format(username)
         print "\n[!] Password : {}".format(password)
         sys.exit(0)
