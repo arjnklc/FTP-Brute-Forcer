@@ -7,7 +7,7 @@ Brute force script with python for ftp servers.
 1. works with both python2 and python3
 2. takes target hosts from file
 3. checks if server is allowing connection on port 21 before attacking
-4. write the output to a markdown friendly [file](/results/ftpBrute.md)
+4. writes the output to a markdown friendly [file](/results/ftpBrute.md)
 5. doesn't bruteforce hosts that has anonymous login enabled
 
 ```
