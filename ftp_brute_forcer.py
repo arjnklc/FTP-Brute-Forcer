@@ -10,11 +10,10 @@ from ftplib import FTP
 
 info = '''
 Usage: ./ftpBrute.py [options]\n
-Options: -t, --target    <hostname/ip>   |   Target\n
-	 -tfile, --targetfile <filename> |   target list\n
-	 -w, --wordlist  <filename>      |   Wordlist\n
-	 -h, --help      <help>          |   print help\n
-
+Options: -t, --target    <hostname/ip>   |   Target
+	 -tfile, --targetfile <filename> |   target list
+	 -w, --wordlist  <filename>      |   Wordlist
+	 -h, --help      <help>          |   print help
 Example: ./ftpBrute.py -t 192.168.1.1 -w wordlist.txt
 '''
 
